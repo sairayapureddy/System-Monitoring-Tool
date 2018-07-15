@@ -1,0 +1,23 @@
+{% extends "index.html" %}
+{% load crispy_forms_tags %}
+{% block title %}
+    Login
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<p>Your username and password didn't match. Please try again.</p>
+{% else %}
+    <form role="form"
+          action="{% url 'app_custom_validate' %}"
+          method="post">
+        {% csrf_token %}
+
+        <p>Please login.</p>
+
+        {{ form | crispy }}
+
+        <button type="submit" class="btn btn-success">Sign in</button>
+    </form>
+{% endif %}
+{% endblock %}

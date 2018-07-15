@@ -1,0 +1,204 @@
+{% extends "index.html" %}
+
+{% block title %}
+    Home: {{ user.get_username }}
+{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <h2 class="text-primary">Welcome, {{ user.get_username }}</h2>
+    <div class="well">          
+        <table class="table table-responsive">
+          <thead>
+            <tr>
+              <th>CPU Usage</th>
+              <th>Memory Usage</th>
+              <th>Disk Usage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ system_details.cpu_usage }}</td>
+              <td>{{ system_details.memory_usage }}</td>
+              <td>{{ system_details.disk_usage }}</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-6">
+            <svg ></svg>
+          </div>
+        </div>
+      </div>
+      
+  <script>
+        var data = [];
+        setInterval(function()
+        {
+            $.ajax({
+                type: "get",
+                url: "/app/poll",
+                success:function(details)
+                {
+
+                    if($('.well .table').find('tr').length >= 6){
+                        $(".well .table tbody tr:first-child").remove();
+                    }
+                    $('.well .table tbody').append("<tr><td>" + details.cpu_usage + "</td><td>" + details.memory_usage + "</td><td>" + details.disk_usage + "</td></tr>");
+                    data.push(details);
+                }
+            });
+        }, 5000);
+
+        var timeoutId = 0;
+
+        var margin = {top: 20, right: 20, bottom: 30, left: 150},
+            width = 960 - margin.left - margin.right,
+            height = 320 - margin.top - margin.bottom;
+
+        var parseDate = d3.time.format("%H:%M:%S").parse;
+
+        var xcenter =  width/2;
+
+        var x = d3.time.scale()
+            .range([0, width]);
+            
+        var y = d3.scale.linear()
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .tickFormat(d3.time.format("%S"));
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        var cpu_line = d3.svg.line()
+            .x(function(d) { return x(d.creatTime);})
+            .y(function(d) { return y(d.cpuTime); });
+
+        var mem_line = d3.svg.line()
+            .x(function(d) { return x(d.creatTime);})
+            .y(function(d) { return y(d.memTime); });
+
+        var disk_line = d3.svg.line()
+            .x(function(d) { return x(d.creatTime);})
+            .y(function(d) { return y(d.diskTime); });
+
+
+        function getTime(data) {
+          if(data.length === 10) {
+            data.shift();
+          }
+        }
+
+        function update() {
+          if(data.length >= 3){
+            getTime(data);
+            render();
+          }
+          timeoutId = setTimeout("update()", 1000);
+        }
+
+        function render() {
+          
+        d3.select("svg")
+              .remove();
+        var color  = d3.scale.ordinal()
+                    .domain(['CPU %', 'Memory %', 'Disk %'])
+                    .range([ 'blue', 'red', 'black' ]);
+        var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom + 40)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          
+        data.forEach(function(d) {
+              d.cpuTime = +d.cpu_usage;
+              d.memTime = +d.memory_usage;
+              d.diskTime = +d.disk_usage;
+              d.creatTime = parseDate(d.time);      
+        });
+          
+          x.domain(d3.extent(data, function(d) { return d.creatTime; }));
+          y.domain([0, d3.max(data, function(d) { return Math.max(d.cpuTime, d.memTime, d.diskTime); })]);
+
+          svg.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .style("text-anchor", "end")
+              .call(xAxis) 
+          .append("text")
+              .attr("transform", "rotate(0)")
+              .attr("y", 40)
+              .attr("dx", xcenter)
+              .attr("font-size", "1.0em")
+              .style("text-anchor", "end")
+              .text("time(s)");
+            
+          svg.append("g")
+              .attr("class", "y axis")
+              .attr("transform", "translate("+ height +",-180px)")
+              .style("text-anchor", "end")
+              .call(yAxis)
+          .append("text")
+              .attr("transform", "rotate(-90)")
+              .attr("y", -40)
+              .attr("dy", ".41em")
+              .attr("font-size", "1.0em")
+              .style("text-anchor", "end")
+              .text("Utilization %");
+
+          svg.append("path")
+              .datum(data)
+              .attr("class", "line")
+              .attr("d", cpu_line)
+              .attr("stroke", 'blue')
+          
+          svg.append("path")
+              .datum(data)
+              .attr("class", "line")
+              .attr("d", mem_line)
+              .attr("stroke", 'red');
+
+          svg.append("path")
+              .datum(data)
+              .attr("class", "line")
+              .attr("d", disk_line)
+              .attr("stroke", 'black');
+          var legend = d3.select('svg')
+                      .append("g")
+                      .selectAll("g")
+                      .data(color.domain())
+                      .enter()
+                      .append('g')
+                      .attr('class', 'legend')
+                      .attr('transform', function(d, i) {
+                                              var height = 30;
+                                              var x = 960;
+                                              var y = i * height;
+                                              return 'translate(' + x + ',' + y + ')';
+                      });
+            legend.append('rect')
+                  .attr('width', 10)
+                  .attr('height', 5)
+                  .style('fill', color)
+                  .style('stroke', color);
+
+            legend.append('text')
+                .attr('x', 15)
+                .attr('y', 10)
+                .text(function(d) { return d; });
+        }
+
+        // Start
+        update();
+
+</script>
+{% endif %}
+{% endblock %}
