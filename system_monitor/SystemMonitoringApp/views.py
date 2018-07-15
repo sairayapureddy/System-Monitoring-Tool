@@ -19,7 +19,16 @@ db = connection[databaseName]
 def calc_utils_and_update_db(uname):
     cpu_usage = psutil.cpu_percent()
     mem_usage = psutil.virtual_memory()[2]
-    disk_usage= psutil.disk_usage('.').percent
+    '''Disk Usage of current drive'''
+    # disk_usage= psutil.disk_usage('.').percent
+    ''' Disk Usage (used hard disk space %, Not read/write usage details) of all drives '''
+    total = 0
+    used = 0
+    for i in psutil.disk_partitions():
+        usage = psutil.disk_usage(i.mountpoint)
+        total += usage.total
+        used += usage.used
+    disk_usage = used/total * 100
     img_bytes = im.grab().tobytes()
     db.get_collection(uname).insert({'username': uname, 'date': datetime.today(), 'time': datetime.now().strftime('%H:%M:%S'), "cpu_usage": cpu_usage, "memory_usage": mem_usage, "disk_usage":disk_usage, 'screenshot_bytes': img_bytes})
     return cpu_usage, mem_usage, disk_usage, img_bytes
