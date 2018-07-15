@@ -28,7 +28,7 @@ def calc_utils_and_update_db(uname):
         usage = psutil.disk_usage(i.mountpoint)
         total += usage.total
         used += usage.used
-    disk_usage = used/total * 100
+    disk_usage = "{0:.1f}".format(used/total * 100)
     img_bytes = im.grab().tobytes()
     db.get_collection(uname).insert({'username': uname, 'date': datetime.today(), 'time': datetime.now().strftime('%H:%M:%S'), "cpu_usage": cpu_usage, "memory_usage": mem_usage, "disk_usage":disk_usage, 'screenshot_bytes': img_bytes})
     return cpu_usage, mem_usage, disk_usage, img_bytes
