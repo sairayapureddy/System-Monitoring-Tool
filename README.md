@@ -10,7 +10,7 @@ The best way to run projects is to create virtual environment so that it won't a
       - <project_name>\Scripts\activate
       - cd <project_name>
 
-2. Clone the reposiory into your <project_name> folder (git clone https://github.com/sairayapureddy/System-Monitoring-Tool)
+2. Clone the reposiory into your <project_name> folder (git clone https://github.com/sairayapureddy/System-Monitoring-Tool.git)
 3. Open command prompt and install packages related to project which are listed in req.txt file.
       - pip install -r req.txt
 
